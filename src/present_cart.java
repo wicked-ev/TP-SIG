@@ -1,6 +1,7 @@
     import java.awt.*;
     import java.util.*;
     import java.io.*;
+    import java.util.List;
 
 
     import javax.swing.JFrame;
@@ -8,18 +9,19 @@
 
     public class present_cart extends JFrame{
         String fichier_seq = "";
-        LinkedList list_point;
+        LinkedList<double[]> list_point;
         JPanel jp= new JPanel();
         static String separateur= ",";
-        static int NORMALISATION_VALEUR =20;
+        static int NORMALISATION_VALEUR =10;
         JPanel jPanel1 = new Panel(this);
         static int LIMITE_VALEUR =-1;
+        private static final double EPSILON = 1e-6;
 
         public present_cart(String lienFichier){
             //super();
             this.fichier_seq = lienFichier;
             this.setTitle("Fenêtre à tester");
-            this.setSize(400, 400);
+            this.setSize(400,400);
             this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             this.setContentPane(jPanel1);
             //this.add(jPanel1);
@@ -27,54 +29,160 @@
             this.list_point = present_cart.charger_fichier_list(this.fichier_seq);
         }
 
-        public void present_map(Graphics G){
-            //Graphics G = jPanel1.getGraphics();
+//        public void present_map(Graphics G){
+//            //Graphics G = jPanel1.getGraphics();
+//            if (list_point == null || list_point.size() < 2) {
+//                System.out.println("Point List Empty");
+//                return;
+//            }
+//            double [] bornes = calculerBornes(list_point);
+//            double minX = bornes[0], maxX = bornes[1], minY = bornes[2], maxY = bornes[3];
+//
+//            int width = getWidth();
+//            int height = getHeight();
+//
+//            int[] prevPoint = null;
+//            int segmentIndex = 1;
+//
+//
+//            List<Segment> segments = getSegments();
+//
+//            Segment longest = null, shortest = null;
+//
+//            for (Segment s : segments) {
+//                if (longest == null || s.length > longest.length) longest = s;
+//                if (shortest == null || s.length < shortest.length) shortest = s;
+//            }
+//
+//            for (int i = 0; i < list_point.size(); i++) {
+//                double[] currentPoint = (double[]) list_point.get(i);
+//
+//                if (currentPoint[0] == present_cart.LIMITE_VALEUR) {
+//                    prevPoint = null;
+//                    continue;
+//                }
+//
+//                int[] currentIntPoint = present_cart.nomaliser_table(currentPoint);
+//                int x = currentIntPoint[0];
+//                int y = currentIntPoint[1];
+//
+//                G.fillOval(x - 3, y - 3, 6, 6);
+//                G.drawString("(" + currentIntPoint[0] + "," + currentIntPoint[1] + ")", x + 5, y - 5);
+//
+//                if (prevPoint != null) {
+//                    G.drawLine(prevPoint[0], prevPoint[1], x, y);
+//
+//                    G.setColor(Color.BLUE);
+//                    int midX = (prevPoint[0] + x) / 2;
+//                    int midY = (prevPoint[1] + y) / 2;
+//                    G.drawString(String.valueOf(segmentIndex), midX, midY);
+//                    G.setColor(Color.BLACK);
+//
+//                    segmentIndex++;
+//                }
+//
+//                prevPoint = currentIntPoint;
+//            }
+//
+//            G.setColor(Color.DARK_GRAY);
+//            G.drawString("Total segments: " + segments.size(), 10, 20);
+//            if (longest != null)
+//                G.drawString(String.format("Longest: %.2f", longest.length), 10, 35);
+//            if (shortest != null)
+//                G.drawString(String.format("Shortest: %.2f", shortest.length), 10, 50);
+//
+//        }
+
+        public void present_map(Graphics G) {
             if (list_point == null || list_point.size() < 2) {
                 System.out.println("Point List Empty");
                 return;
             }
-            double [] bornes = calculerBornes(list_point);
+
+            double[] bornes = calculerBornes(list_point);
             double minX = bornes[0], maxX = bornes[1], minY = bornes[2], maxY = bornes[3];
 
             int width = getWidth();
             int height = getHeight();
 
-            int[] prevPoint = null;
-            int segmentIndex = 1;
-
-            for (int i = 0; i < list_point.size(); i++) {
-                double[] currentPoint = (double[]) list_point.get(i);
-
-                if (currentPoint[0] == present_cart.LIMITE_VALEUR) {
-                    prevPoint = null;
-                    continue;
-                }
-
+            for (double[] currentPoint : list_point) {
+                if (currentPoint[0] == present_cart.LIMITE_VALEUR) continue;
                 int[] currentIntPoint = present_cart.nomaliser_table(currentPoint);
                 int x = currentIntPoint[0];
                 int y = currentIntPoint[1];
 
+                G.setColor(Color.BLACK);
                 G.fillOval(x - 3, y - 3, 6, 6);
                 G.drawString("(" + currentIntPoint[0] + "," + currentIntPoint[1] + ")", x + 5, y - 5);
+            }
 
-                if (prevPoint != null) {
-                    G.drawLine(prevPoint[0], prevPoint[1], x, y);
+            List<Segment> segments = getSegments();
 
-                    G.setColor(Color.BLUE);
-                    int midX = (prevPoint[0] + x) / 2;
-                    int midY = (prevPoint[1] + y) / 2;
-                    G.drawString(String.valueOf(segmentIndex), midX, midY);
-                    G.setColor(Color.BLACK);
+            Segment longest = null, shortest = null;
+            for (Segment s : segments) {
+                if (longest == null || s.length > longest.length) longest = s;
+                if (shortest == null || s.length < shortest.length) shortest = s;
+            }
 
-                    segmentIndex++;
-                }
+            int segmentIndex = 1;
+            for (Segment s : segments) {
+                int[] p1 = nomaliser_table(s.p1);
+                int[] p2 = nomaliser_table(s.p2);
 
-                prevPoint = currentIntPoint;
+                G.setColor(Color.BLACK);
+                G.drawLine(p1[0], p1[1], p2[0], p2[1]);
+
+                G.setColor(Color.BLUE);
+                int midX = (p1[0] + p2[0]) / 2;
+                int midY = (p1[1] + p2[1]) / 2;
+                G.drawString(String.valueOf(segmentIndex), midX, midY);
+
+                segmentIndex++;
             }
 
             G.setColor(Color.DARK_GRAY);
-            G.drawString("Total segments: " + cal_nbr_semg(), 10, 20);
+            G.drawString("Total unique segments: " + segments.size(), 10, 20);
+            if (longest != null)
+                G.drawString(String.format("Longest: %.2f", longest.length), 10, 35);
+            if (shortest != null)
+                G.drawString(String.format("Shortest: %.2f", shortest.length), 10, 50);
+        }
 
+        private boolean polygonsShareEdge(List<double[]> poly1, List<double[]> poly2) {
+            for (int i = 0; i < poly1.size(); i++) {
+                double[] a1 = poly1.get(i);
+                double[] a2 = poly1.get((i + 1) % poly1.size());
+
+                for (int j = 0; j < poly2.size(); j++) {
+                    double[] b1 = poly2.get(j);
+                    double[] b2 = poly2.get((j + 1) % poly2.size());
+
+                    // Edge (a1, a2) matches edge (b2, b1)
+                    if ((samePoint(a1, b2) && samePoint(a2, b1)) ||
+                            (samePoint(a1, b1) && samePoint(a2, b2))) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private boolean samePoint(double[] p1, double[] p2) {
+            return Math.abs(p1[0] - p2[0]) < EPSILON && Math.abs(p1[1] - p2[1]) < EPSILON;
+        }
+
+        public List<Integer> getPolygonNeighbors(List<List<double[]>> polygons, int index) {
+            List<Integer> neighbors = new ArrayList<>();
+            List<double[]> target = polygons.get(index);
+
+            for (int i = 0; i < polygons.size(); i++) {
+                if (i == index) continue;
+                if (polygonsShareEdge(target, polygons.get(i))) {
+                    neighbors.add(i);
+                }
+            }
+
+            return neighbors;
         }
 
         public static double[] calculerBornes(LinkedList<double[]> list_point) {
@@ -118,7 +226,7 @@
             int[] tab_int= new int[table.length];
             for(int i =0; i<table.length;i++){
                 if(tab_int[i]!=present_cart.LIMITE_VALEUR)
-                    tab_int[i]= (int)(table[i]*present_cart.NORMALISATION_VALEUR);
+                    tab_int[i]= (int)(Math.abs(table[i] * present_cart.NORMALISATION_VALEUR));
             }
             return tab_int;
         }
@@ -166,30 +274,66 @@
             }
         }
         public int cal_nbr_semg(){
-            int nbr_seg = 0;
+//            int nbr_seg = 0;
+//
+//            if (list_point == null || list_point.size() < 2) {
+//                System.out.println("Point List Empty");
+//                return 0;
+//            }
+//
+//            for (int i = 0; i < list_point.size() - 1; i++) {
+//                double[] p_1 = (double[]) list_point.get(i);
+//                double[] p_2 = (double[]) list_point.get(i + 1);
+//
+//                if (p_1 == null || p_2 == null || p_1.length < 2 || p_2.length < 2) continue;
+//
+//                // Count only if both are valid points (not separator rows)
+//                if (p_1[0] != LIMITE_VALEUR && p_2[0] != LIMITE_VALEUR) {
+//                    nbr_seg++;
+//                }
+//            }
+            return getSegments().size();
+        }
 
-            if (list_point == null || list_point.size() < 2) {
-                System.out.println("Point List Empty");
-                return 0;
-            }
+        public List<Segment> getSegments() {
+            List<Segment> segments = new ArrayList<>();
+
+            if (list_point == null || list_point.size() < 2) return segments;
 
             for (int i = 0; i < list_point.size() - 1; i++) {
-                double[] p_1 = (double[]) list_point.get(i);
-                double[] p_2 = (double[]) list_point.get(i + 1);
+                double[] p1 = (double[]) list_point.get(i);
+                double[] p2 = (double[]) list_point.get(i + 1);
 
-                if (p_1 == null || p_2 == null || p_1.length < 2 || p_2.length < 2) continue;
+                // Skip invalid or separator points
+                if (p1 == null || p2 == null) continue;
+                if (p1[0] == LIMITE_VALEUR || p2[0] == LIMITE_VALEUR) continue;
 
-                // Count only if both are valid points (not separator rows)
-                if (p_1[0] != LIMITE_VALEUR && p_2[0] != LIMITE_VALEUR) {
-                    nbr_seg++;
+                boolean alreadySeg = false;
+
+                for (Segment s : segments) {
+                    // Check both directions (p1→p2 or p2→p1)
+                    if ((samePoint(s.p1, p1) && samePoint(s.p2, p2)) ||
+                            (samePoint(s.p1, p2) && samePoint(s.p2, p1))) {
+                        alreadySeg = true;
+                        break; // stop early — we found a duplicate
+                    }
+                }
+
+                if (!alreadySeg) {
+                    segments.add(new Segment(p1, p2));
                 }
             }
+            return segments;
+        }
 
-            return nbr_seg;
+        public LinkedList<double[]> filter_list() {
+            LinkedList<double[]> filter = list_point;
+
         }
 
         public static void main (String[] arg){
-            String lienFichier = lire_string("Enter Text File Path: ");
+            //String lienFichier = lire_string("Enter Text File Path: ");
+            String lienFichier = "C:/Users/admin/Downloads/testGherbaoui.txt";
             present_cart pc = new present_cart(lienFichier);
             System.out.println("Nomber de segments: " + pc.cal_nbr_semg());
             pc.affich_list(pc.list_point);

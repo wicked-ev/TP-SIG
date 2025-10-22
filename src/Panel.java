@@ -13,7 +13,6 @@ public class Panel extends JPanel {
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
         this.cart.present_map(g);
-        g.drawLine(10,20,30,40);
     }
 
 }
